@@ -1,0 +1,93 @@
+//
+//  ContentView.swift
+//  Messenger
+//
+//  Created by Hermine M on 20/03/2022.
+//
+
+import SwiftUI
+
+struct ConversationView: View {
+    @EnvironmentObject var model: AppStateModel
+    @State var otherUsername: String = ""
+    @State var showChat = false
+    @State var showSearch = false
+    
+    var body: some View {
+        NavigationView {
+            ScrollView(.vertical) {
+                ForEach(model.conversations, id: \.self) { name in
+                    NavigationLink(
+                        destination: ChatView(otherUsername: name),
+                        label: {
+                            HStack {
+                                Image(model.currentUsername == "hello" ? "photo1" : "photo2")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 64, height: 65)
+                                    .foregroundColor(Color.pink)
+                                    .clipShape(Circle())
+                                Text(name)
+                                    .bold()
+                                    .foregroundColor(Color(.label))
+                                    .font(.system(size: 32))
+                                Spacer()
+                            }
+                            .padding()
+                        })
+                }
+                if !otherUsername.isEmpty {
+                    NavigationLink(
+                        "",
+                        destination: ChatView(otherUsername: otherUsername),
+                        isActive: $showChat
+                    )
+                }
+            }
+            .navigationTitle("Conversations")
+            .toolbar {
+                ToolbarItem(placement: ToolbarItemPlacement.navigationBarLeading) {
+                    Button("Sign Out") {
+                        self.signOut()
+                    }
+                }
+                ToolbarItem(placement: ToolbarItemPlacement.navigationBarTrailing) {
+                    NavigationLink(
+                        destination: SearchView { name in
+                            self.showSearch = false
+                            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 1) {
+                                self.otherUsername = name
+                                self.showChat = true
+                            }
+                        },
+                        isActive: $showSearch,
+                        label: {
+                            Image(systemName: "magnifyingglass")
+                        })
+                }
+            }
+            .fullScreenCover(isPresented: $model.showingSignIn, content: {
+                SignInView()
+                }
+            )
+            .onAppear() {
+                guard model.auth.currentUser != nil else {
+                    return
+                }
+                
+                model.getConversations()
+            }
+        }
+    }
+    
+    func signOut() {
+        model.signOut()
+    }
+}
+
+struct ContentView_Previews: PreviewProvider {
+    static var previews: some View {
+        ConversationView()
+            .preferredColorScheme(.dark)
+    }
+}
